@@ -1,0 +1,91 @@
+{
+    "type": "Ext.app.ViewModel",
+    "reference": {
+        "name": "items",
+        "type": "array"
+    },
+    "codeClass": null,
+    "userConfig": {
+        "data": [
+            "",
+            "{",
+            "  lightStatus: false,",
+            "  lightId: 0",
+            "}"
+        ],
+        "designer|userAlias": "lightbulb",
+        "designer|userClassName": "LightbulbViewModel"
+    },
+    "designerId": "fa68db52-4a71-4b1f-83b6-d1d8d4a6dbde",
+    "cn": [
+        {
+            "type": "Ext.data.Store",
+            "reference": {
+                "name": "stores",
+                "type": "array"
+            },
+            "codeClass": null,
+            "userConfig": {
+                "autoLoad": false,
+                "model": "Light",
+                "name": "Lights"
+            },
+            "name": "MyStore",
+            "designerId": "e35ff845-8804-4a90-a141-eb3a89af3d54",
+            "cn": [
+                {
+                    "type": "Ext.util.Sorter",
+                    "reference": {
+                        "name": "sorters",
+                        "type": "object"
+                    },
+                    "codeClass": null,
+                    "userConfig": {
+                        "property": "name"
+                    },
+                    "name": "MySorter",
+                    "designerId": "1a05e29d-c060-41c9-9e0f-ae7b6b9ea75a"
+                }
+            ]
+        },
+        {
+            "type": "Ext.app.bind.Formula",
+            "reference": {
+                "name": "formulas",
+                "type": "array"
+            },
+            "codeClass": null,
+            "userConfig": {
+                "name": "lightbulbUrl"
+            },
+            "name": "MyFormula",
+            "designerId": "4c818093-0e09-469b-8c66-440133ca223e",
+            "cn": [
+                {
+                    "type": "fixedfunction",
+                    "reference": {
+                        "name": "items",
+                        "type": "array"
+                    },
+                    "codeClass": null,
+                    "userConfig": {
+                        "designer|params": [
+                            "get"
+                        ],
+                        "fn": "get",
+                        "implHandler": [
+                            "",
+                            "if (get('lightStatus')) {",
+                            "    return 'resources/images/lightbulb_on.png';",
+                            "} else {",
+                            "     return 'resources/images/lightbulb.png';",
+                            "}"
+                        ]
+                    },
+                    "name": "get",
+                    "designerId": "fb8bc37a-9b55-46e1-a59b-7c29bde826b0"
+                }
+            ]
+        }
+    ]
+}

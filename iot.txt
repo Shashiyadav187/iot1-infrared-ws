@@ -1,0 +1,264 @@
+The Internet of Things (IoT) refers to the increasing number of devices that are now connected to the Internet and can be programmed remotely (typically from your smartphone).  Everything from from <a href="http://connectedtoothbrush.com/">Oral-B toothbrushes</a> to <a href="http://www.samsung.com/us/appliances/washers-dryers/WF457ARGSWR/A2" target="_blank">Samsung Washer-Dryers</a>, <a href="https://nest.com/" target="_blank">Nest Thermostats</a>, and <a href="http://www2.meethue.com/en-us/" target="_blank">Philips Light Bulbs</a> are now connected and have their own programming interfaces. Additional products are coming online that enable you to control <a href="http://www.hotforsecurity.com/blog/company-connects-your-toaster-blender-to-the-internet-for-25-1838.html" target="_blank">virtually any electronic device</a> remotely.
+
+This technology revolution opens the door for software developers to produce some truly innovative and immersive experiences. Easy to use API's and libraries now exist, such as Cylon.js and the forthcoming "Thunder" IoT platform from Salesforce.com that make it quite simple to control devices in the physical world from the virtual one. Of course, all of this power also opens up a myriad of security concerns as well. While I certainly don't want my blender getting hacked into and ruining my margarita,  I have a dream where I can install NEST thermostats in my sales team's houses and turn up the heat (literally) when automatic reporting from Salesforce.com indicates that they're not making their quotas. Because that's how I roll.
+<h3>Enlightening yourself about IoT with Philips Hue Lights</h3>
+For our first IoT trick, we're going to use several well-proven technologies to produce a simple app to control a <a href="http://www2.meethue.com/en-us/">Philips Hue lightbulb</a>. I've been using Hue bulbs for a couple of years now and they're fantastic. They use light-emitting diodes to produce energy-efficient light across the RGB palette. Each bulb contains a wi-fi radio that connects to a bridge.
+
+[caption id="attachment_2376" align="alignnone" width="590"]<img class="alignnone size-full wp-image-2376" src="https://druckit.files.wordpress.com/2015/12/2015-12-13_09-31-21.png" alt="2015-12-13_09-31-21" width="590" height="400" /> Philips Hue Starter Kit with Bridge and 3 Connected Bulbs[/caption]
+
+The Bridge has its own REST API that enables you to easily get a list of the bulbs that have been named/registered as well as send commands to set the color and brightness of each bulb.
+<h3>Tools of the Trade</h3>
+We used the following tools to produce our first IoT app. As a bonus, all of the aforementioned products are free and open-source. They also all use JavaScript as their programming language.
+<ul>
+	<li><a href="https://nodejs.org/en/" target="_blank">Node.JS</a> application server
+Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient. Node.js' package ecosystem, npm, is the largest ecosystem of open source libraries in the world.</li>
+	<li><a href="http://cylonjs.com/" target="_blank">Cylon.JS</a> API for Controlling Devices
+Cylon.js is a JavaScript framework for robotics, physical computing, and the Internet of Things. It makes it incredibly easy to command robots and devices.</li>
+	<li><a href="www.sencha.com" target="_blank">Sencha Ext JS</a> (GPL License) for producing the front-end GUI.
+The most comprehensive JavaScript framework for building feature-rich cross-platform web applications targeting desktop, tablets, and smartphones. Ext JS leverages HTML5 features on modern browsers while maintaining compatibility and functionality for legacy browsers.</li>
+</ul>
+<h3>Using Node.JS and Cylon.JS - By your Command!</h3>
+I've used Node.JS for a number of projects now and have always been impressed by its simple installation, fast performance, and ease-of-use. In particular, the Express framework for Node makes it <a href="https://druckit.wordpress.com/2015/03/10/sample-node-js-rest-api-implementation-with-mysql/" target="_blank">ridiculously simple to produce a quick and dirty RESTful api</a> like the one that we produced for this app.
+
+Cylon.JS is an awesome API for connecting to more than 40 different hardware platforms -- including Philips Hue bulbs and bridges.
+
+[caption id="attachment_2422" align="alignnone" width="635"]<img class="alignnone size-full wp-image-2422" src="https://druckit.files.wordpress.com/2015/12/iot2.png" alt="iot2.png" width="635" height="348" /> Cylon.JS Supported Devices[/caption]
+
+To create our Node.JS project, we simply created a new folder (/IoT1/) on our filesystem, opened a command prompt, and issued the following statements which installs the Express framework for Node.JS, creates an express project, installs the Cylon API, and adds-in the cylon-hue library:
+
+[sourcecode language="html"]
+npm install express --save
+express
+npm install cylon --save
+npm install cylon-hue --save
+[/sourcecode]
+
+Next, we implemented a new route, named hue, by inserting code on lines 10 and 28 of the /IoT1/app.js file as illustrated by the following snippet. In effect, this programs our Node server to respond to HTTP requests to a url of <strong>http://<em>serverip</em>/hue</strong>
+
+[sourcecode language="javascript"]
+
+var express = require('express');
+var path = require('path');
+var favicon = require('serve-favicon');
+var logger = require('morgan');
+var cookieParser = require('cookie-parser');
+var bodyParser = require('body-parser');
+
+var routes = require('./routes/index');
+var users = require('./routes/users');
+var hue = require('./routes/hue');
+
+var app = express();
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
+
+// uncomment after placing your favicon in /public
+//app.use(favicon(__dirname + '/public/favicon.ico'));
+app.use(logger('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use('/', routes);
+app.use('/users', users);
+app.use('/hue', hue);
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+// error handlers
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('error', {
+     message: err.message,
+     error: err
+    });
+  });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.render('error', {
+  message: err.message,
+  error: {}
+ });
+});
+
+module.exports = app;
+
+[/sourcecode]
+
+We then created a file named /IoT1/routes/hue.js to handle http GET/POST/PUT requests. In this particular case, we somewhat arbitrarily decided the following:
+<ul>
+	<li>GET requests should return information about connected Hue bulbs from the Hue Bridge</li>
+	<li>PUT requests should turn on/off a selected bulb and change the bulb color to Fig Leaf's green brand color</li>
+	<li>POST requests should activate the "Red Alert" mode, causing the light to blink like in Star Trek because, well... of course!</li>
+</ul>
+
+[sourcecode language="javascript"]
+var express = require('express');
+var router = express.Router();
+var Cylon = require('cylon');
+
+// see notes about host + username in the blog article
+var host = '10.0.1.71';
+var username = '215c4296227a3247159acafa1258e75b';
+
+var redAlert = null; // red alert interval timer
+
+/*
+poll the bridge and return info about the lights
+*/
+router.get('/', function(req, res, next) {
+
+ Cylon.robot({
+  connections: {
+  hue: {
+   adaptor: 'hue',
+   host: host,
+   username: username
+  }
+ },
+
+ devices: {
+   bridge: {
+    driver: 'hue-bridge'
+   }
+ },
+
+ work: function(my) {
+  my.bridge.getFullState(function(err, config) {
+ 
+    if (err) {
+     var result = {
+      success: false,
+      error: err
+     }
+    } else {
+     var lights = [];
+     for (var i in config.lights) {
+       lights.push({
+        'id': i,
+        'state': config.lights[i].state.on,
+        'reachable': config.lights[i].state.reachable,
+        'name': config.lights[i].name
+       });
+     }
+     var result = {
+      success: true,
+      lights: lights,
+      config: config.config
+     }
+    }
+    res.writeHead(200, {
+    "Content-Type": "application/json"
+    });
+    res.write(JSON.stringify(result));
+    res.end();
+   });
+  }
+ }).start();
+});
+
+/*
+* toggle bulb on/off
+*/
+router.put('/', function(req, res) {
+
+var lightId = req.body.id;
+var turnOn = (req.body.turnOn == 'true');
+
+Cylon.robot({
+connections: {
+hue: {
+adaptor: 'hue',
+host: host,
+username: username
+}
+},
+
+devices: {
+bulb: {
+driver: 'hue-light',
+lightId: lightId
+}
+},
+
+work: function(my) {
+if (turnOn) {
+my.bulb.turnOn();
+my.bulb.rgb(0, 102, 51); // fig leaf green
+} else {
+if (global.redAlert) {
+clearInterval(global.redAlert);
+global.redAlert = null;
+}
+my.bulb.turnOff();
+}
+
+var result = {
+success: true
+};
+res.writeHead(200, {
+"Content-Type": "application/json"
+});
+res.write(JSON.stringify(result));
+res.end();
+}
+}).start();
+});
+
+router.post('/', function(req, res) {
+var lightId = req.body.id;
+var turnOn = (req.body.turnOn == 'true');
+
+Cylon.robot({
+connections: {
+hue: {
+adaptor: 'hue',
+host: host,
+username: username
+}
+},
+
+devices: {
+bulb: {
+driver: 'hue-light',
+lightId: lightId
+}
+},
+
+work: function(my) {
+if (!global.redAlert) {
+my.bulb.turnOn();
+my.bulb.rgb(255, 0, 0);
+global.redAlert = every((0.8).second(), function() {
+my.bulb.toggle();
+});
+}
+
+var result = { success: true };
+res.writeHead(200, {
+"Content-Type": "application/json"
+});
+res.write(JSON.stringify(result));
+res.end();
+}
+}).start();
+});
+
+module.exports = router;
+[/sourcecode]
